@@ -5,6 +5,7 @@ import TransactionsRepository from '../repositories/TransactionsRepository';
 import CreateTransactionService from '../services/CreateTransactionService';
 // import DeleteTransactionService from '../services/DeleteTransactionService';
 // import ImportTransactionsService from '../services/ImportTransactionsService';
+import AppError from '../errors/AppError';
 
 const transactionsRouter = Router();
 
@@ -33,11 +34,23 @@ transactionsRouter.post('/', async (request, response) => {
     category,
   });
 
-  return response.json(transaction);
+  return response.status(201).json(transaction);
 });
 
 transactionsRouter.delete('/:id', async (request, response) => {
-  // TODO
+  const { id } = request.params;
+
+  const transactionRepository = getCustomRepository(TransactionsRepository);
+
+  const transaction = await transactionRepository.findOne(id);
+
+  if (!transaction) {
+    throw new AppError('Invalid transaction ID, try again!');
+  }
+
+  await transactionRepository.delete({ id });
+
+  return response.status(204).send();
 });
 
 transactionsRouter.post('/import', async (request, response) => {
