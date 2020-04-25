@@ -13,8 +13,6 @@ class TransactionsRepository extends Repository<Transaction> {
   public async getBalance(): Promise<Balance> {
     const transactions = await this.find();
 
-    console.log(transactions);
-
     const reducerTransaction = (value: number, current: Transaction): number =>
       value + current.value;
 
@@ -31,8 +29,6 @@ class TransactionsRepository extends Repository<Transaction> {
       outcome,
       total: income - outcome,
     };
-
-    console.log(currentBalance);
 
     return currentBalance;
   }

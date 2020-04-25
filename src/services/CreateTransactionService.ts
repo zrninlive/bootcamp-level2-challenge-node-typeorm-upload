@@ -1,15 +1,16 @@
-import { getRepository, getCustomRepository } from 'typeorm';
-// import AppError from '../errors/AppError';
+import { getCustomRepository } from 'typeorm';
+import AppError from '../errors/AppError';
 
 import Transaction from '../models/Transaction';
 import Category from '../models/Category';
 
 import TransactionsRepository from '../repositories/TransactionsRepository';
+import CategoriesRepository from '../repositories/CategoriesRepository';
 
 interface Request {
   title: string;
   value: number;
-  type: 'income | outcome';
+  type: 'income' | 'outcome';
   category: string;
 }
 
@@ -20,34 +21,22 @@ class CreateTransactionService {
     type,
     category,
   }: Request): Promise<Transaction> {
-    const categoriesRepository = getRepository(Category);
+    const categoriesRepository = getCustomRepository(CategoriesRepository);
     const transactionsRepository = getCustomRepository(TransactionsRepository);
 
-    const categoryExists = await categoriesRepository.findOne({
-      where: { title: category },
-    });
+    const { total } = await transactionsRepository.getBalance();
 
-    if (categoryExists) {
-      const new_transaction = transactionsRepository.create({
-        title,
-        value,
-        type,
-        category_id: categoryExists.id,
-      });
-
-      await transactionsRepository.save(new_transaction);
-
-      return new_transaction;
+    if (type === 'outcome' && total < value) {
+      throw new AppError('You do not have enought money');
     }
 
-    const new_category = categoriesRepository.create({ title: category });
-    await categoriesRepository.save(new_category);
+    const categoryTransaction = await categoriesRepository.generateId(category);
 
     const transaction = transactionsRepository.create({
       title,
       value,
       type,
-      category_id: new_category.id,
+      category: categoryTransaction,
     });
 
     await transactionsRepository.save(transaction);
